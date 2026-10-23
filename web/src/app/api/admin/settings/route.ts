@@ -13,6 +13,16 @@ const schema = z.object({
   messages: z.array(z.string().min(1)).optional(),
   shutdownAfterScenario: z.boolean().optional(),
   youtubeUrl: z.string().url().optional(),
+  soundsDurationSec: z.number().min(5).max(600).optional(),
+  youtubePool: z.array(z.string().url()).optional(),
+  linkPool: z.array(z.string().url()).optional(),
+  winAlertMessages: z.array(z.string().min(1).max(500)).optional(),
+  flashDurationSec: z.number().min(3).max(120).optional(),
+  cmdFlashCount: z.number().min(3).max(20).optional(),
+  cmdFlashVisibleMs: z.number().min(50).max(800).optional(),
+  cmdLoopIterations: z.number().min(10).max(2000).optional(),
+  cmdFlashPlainMs: z.number().min(30).max(400).optional(),
+  cmdLines: z.array(z.string().min(1)).optional(),
 });
 
 export async function GET() {

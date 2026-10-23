@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { verifySecret } from '@/lib/agent-auth';
+import { buildAgentCommand } from '@/lib/command-build';
 import { prisma } from '@/lib/db';
 import { createFinishToken } from '@/lib/finish-token';
 import { getSettings } from '@/lib/settings-store';
@@ -36,6 +37,11 @@ export async function POST(req: Request) {
     data: { lastSeenAt: new Date(), hostname: hostname ?? agent.hostname },
   });
 
+  await prisma.command.updateMany({
+    where: { agentId, status: 'delivered' },
+    data: { status: 'done', doneAt: new Date() },
+  });
+
   const pending = await prisma.command.findFirst({
     where: { agentId, status: 'pending' },
     orderBy: { createdAt: 'asc' },
@@ -45,36 +51,38 @@ export async function POST(req: Request) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin;
 
   if (!pending) {
-    return NextResponse.json({ command: null, settingsSnapshot: { fakeShutdownDurationSec: settings.fakeShutdownDurationSec } });
-  }
-
-  await prisma.command.update({
-    where: { id: pending.id },
-    data: { status: 'delivered', doneAt: new Date() },
-  });
-
-  const payload = (pending.payload ?? {}) as Record<string, unknown>;
-  if (pending.kind === 'scenario') {
-    const finishToken = await createFinishToken(agentId, settings.shutdownAfterScenario);
-    const q = new URLSearchParams({
-      agent: agentId,
-      fake: String(settings.fakeShutdownDurationSec),
-      shutdown: settings.shutdownAfterScenario ? '1' : '0',
-      finish: finishToken,
-    });
     return NextResponse.json({
-      command: {
-        kind: 'scenario',
-        url: `${baseUrl}/play?${q.toString()}`,
-        fakeShutdownSec: settings.fakeShutdownDurationSec,
-        shutdownAfter: settings.shutdownAfterScenario,
-      },
+      command: null,
       settingsSnapshot: { fakeShutdownDurationSec: settings.fakeShutdownDurationSec },
     });
   }
 
+  const payload = (pending.payload ?? {}) as Record<string, unknown>;
+  const finishToken =
+    pending.kind === 'scenario'
+      ? await createFinishToken(agentId, settings.shutdownAfterScenario)
+      : undefined;
+
+  const command = buildAgentCommand(pending.kind, settings, baseUrl, agentId, {
+    finishToken,
+    payload,
+  });
+
+  if (!command) {
+    await prisma.command.update({
+      where: { id: pending.id },
+      data: { status: 'failed', doneAt: new Date() },
+    });
+    return NextResponse.json({ command: null, error: 'Komut oluşturulamadı' });
+  }
+
+  await prisma.command.update({
+    where: { id: pending.id },
+    data: { status: 'delivered' },
+  });
+
   return NextResponse.json({
-    command: { kind: pending.kind, ...payload },
+    command,
     settingsSnapshot: { fakeShutdownDurationSec: settings.fakeShutdownDurationSec },
   });
 }

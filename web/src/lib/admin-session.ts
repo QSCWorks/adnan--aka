@@ -30,4 +30,9 @@ export async function readAdminSession(): Promise<boolean> {
   }
 }
 
+export async function clearAdminSessionCookie(): Promise<void> {
+  const jar = await cookies();
+  jar.set(COOKIE, '', { httpOnly: true, path: '/', maxAge: 0 });
+}
+
 export { COOKIE, MAX_AGE };

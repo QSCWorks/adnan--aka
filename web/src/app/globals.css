@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@source '../../src/**/*.{js,ts,jsx,tsx}';
+
 :root {
   color-scheme: dark;
   --bg: #0a0c10;
@@ -29,8 +31,25 @@
   --color-danger: var(--danger);
 }
 
+html {
+  background: var(--bg);
+  color: var(--fg);
+}
+
 body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  min-height: 100dvh;
+}
+
+@layer base {
+  input,
+  button,
+  select,
+  textarea {
+    color: var(--fg);
+    background-color: var(--surface);
+    border-color: var(--border);
+  }
 }

@@ -22,6 +22,8 @@ export default async function PlayPage({
     typeof fakeRaw === 'string' ? Number.parseInt(fakeRaw, 10) : undefined;
   const finish = typeof sp.finish === 'string' ? sp.finish : undefined;
   const shutdown = sp.shutdown === '1';
+  const startMode = sp.mode === 'fake-only' ? 'fake-only' : 'full';
+  const skipYoutubeAfterFake = sp.noyt === '1';
 
   return (
     <RevengeTheater
@@ -29,6 +31,8 @@ export default async function PlayPage({
       fakeOverrideSec={Number.isFinite(fakeOverrideSec) ? fakeOverrideSec : undefined}
       finishToken={finish}
       shutdownAfter={shutdown}
+      startMode={startMode}
+      skipYoutubeAfterFake={skipYoutubeAfterFake}
     />
   );
 }

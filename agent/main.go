@@ -173,18 +173,17 @@ func execute(resp *heartbeatResp) {
 }
 
 func openKiosk(url string) {
-	browsers := [][]string{
-		{"msedge", "--kiosk", url, "--edge-kiosk-type=fullscreen"},
-		{"chrome", "--kiosk", url, "--fullscreen"},
-	}
-	for _, args := range browsers {
-		if path, err := exec.LookPath(args[0]); err == nil {
-			cmd := exec.Command(path, args[1:]...)
+	chromeArgs := []string{"--incognito", "--new-window", "--start-fullscreen", "--no-first-run", "--disable-infobars", url}
+	for _, p := range []string{
+		os.Getenv("ProgramFiles") + `\Google\Chrome\Application\chrome.exe`,
+		os.Getenv("ProgramFiles(x86)") + `\Google\Chrome\Application\chrome.exe`,
+		os.Getenv("LocalAppData") + `\Google\Chrome\Application\chrome.exe`,
+	} {
+		if _, err := os.Stat(p); err == nil {
+			cmd := exec.Command(p, chromeArgs...)
 			_ = cmd.Start()
 			return
 		}
-		_ = exec.Command("cmd", "/c", "start", "", args[0], args[1], url).Start()
-		return
 	}
 	_ = exec.Command("cmd", "/c", "start", "", url).Start()
 }

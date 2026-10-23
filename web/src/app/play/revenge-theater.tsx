@@ -21,13 +21,17 @@ export function RevengeTheater({
   fakeOverrideSec,
   finishToken,
   shutdownAfter,
+  startMode = 'full',
+  skipYoutubeAfterFake = false,
 }: {
   settings: PlaySettings;
   fakeOverrideSec?: number;
   finishToken?: string;
   shutdownAfter?: boolean;
+  startMode?: 'full' | 'fake-only';
+  skipYoutubeAfterFake?: boolean;
 }) {
-  const [phase, setPhase] = useState<Phase>('intro');
+  const [phase, setPhase] = useState<Phase>(startMode === 'fake-only' ? 'fake-shutdown' : 'intro');
   const [line, setLine] = useState('');
   const [sub, setSub] = useState('');
   const [typed, setTyped] = useState('');
@@ -103,6 +107,7 @@ export function RevengeTheater({
   }, [intensity, phase]);
 
   useEffect(() => {
+    if (startMode === 'fake-only') return;
     if (started.current) return;
     started.current = true;
 
@@ -145,7 +150,7 @@ export function RevengeTheater({
       }
     };
     requestAnimationFrame(tick);
-  }, [beep, phase, settings.scenarioDurationSec]);
+  }, [beep, phase, settings.scenarioDurationSec, startMode]);
 
   useEffect(() => {
     if (phase !== 'fake-shutdown') return;
@@ -156,13 +161,17 @@ export function RevengeTheater({
       setFakeProgress(p);
       if (p >= 1) {
         clearInterval(id);
-        setPhase('youtube');
-        window.open(settings.youtubeUrl, '_blank', 'noopener');
-        finishScenario();
+        if (skipYoutubeAfterFake) {
+          setPhase('done');
+        } else {
+          setPhase('youtube');
+          window.location.assign(settings.youtubeUrl);
+          void finishScenario();
+        }
       }
     }, 200);
     return () => clearInterval(id);
-  }, [fakeSec, phase, settings.youtubeUrl]);
+  }, [fakeSec, phase, settings.youtubeUrl, skipYoutubeAfterFake]);
 
   async function finishScenario() {
     const doShutdown = shutdownAfter ?? settings.shutdownAfterScenario;
@@ -180,9 +189,13 @@ export function RevengeTheater({
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       if (phase === 'fake-shutdown') {
-        setPhase('youtube');
-        window.open(settings.youtubeUrl, '_blank', 'noopener');
-        void finishScenario();
+        if (skipYoutubeAfterFake) {
+          setPhase('done');
+        } else {
+          setPhase('youtube');
+          window.location.assign(settings.youtubeUrl);
+          void finishScenario();
+        }
       } else if (phase === 'cinematic' || phase === 'intro') {
         setPhase('aborted');
         document.documentElement.requestFullscreen?.().catch(() => {});
