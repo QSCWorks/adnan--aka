@@ -16,6 +16,25 @@ type PlaySettings = {
 
 type Phase = 'intro' | 'cinematic' | 'fake-shutdown' | 'youtube' | 'done' | 'aborted';
 
+function toAutoplayUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, '');
+    let id = u.searchParams.get('v');
+    if (!id && host === 'youtu.be') id = u.pathname.split('/').filter(Boolean)[0] ?? null;
+    const embed = u.pathname.match(/\/embed\/([A-Za-z0-9_-]{6,})/);
+    if (!id && embed) id = embed[1];
+    const shorts = u.pathname.match(/\/shorts\/([A-Za-z0-9_-]{6,})/);
+    if (!id && shorts) id = shorts[1];
+    if (id && (host.includes('youtube') || host === 'youtu.be')) {
+      return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
+    }
+  } catch {
+    /* bırak */
+  }
+  return url;
+}
+
 export function RevengeTheater({
   settings,
   fakeOverrideSec,
@@ -183,7 +202,7 @@ export function RevengeTheater({
           setPhase('done');
         } else {
           setPhase('youtube');
-          window.location.assign(settings.youtubeUrl);
+          window.location.assign(toAutoplayUrl(settings.youtubeUrl));
           void finishScenario();
         }
       }
@@ -211,7 +230,7 @@ export function RevengeTheater({
           setPhase('done');
         } else {
           setPhase('youtube');
-          window.location.assign(settings.youtubeUrl);
+          window.location.assign(toAutoplayUrl(settings.youtubeUrl));
           void finishScenario();
         }
       } else if (phase === 'cinematic' || phase === 'intro') {

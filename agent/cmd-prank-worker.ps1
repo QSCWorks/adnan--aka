@@ -113,6 +113,37 @@ exit
   }
 }
 
+function Invoke-OpenCloseBurst {
+  param([int]$Rounds, [string[]]$TextLines)
+  $palette = @('0A', '0C', '0E', '07', '1F', 'C0', 'A0')
+  $n = [Math]::Max(12, [Math]::Min(40, $Rounds))
+  for ($i = 0; $i -lt $n; $i++) {
+    $line = if ($TextLines.Count -gt 0) { [string]$TextLines[$i % $TextLines.Count] } else { '20.10' }
+    $line = ($line -replace '%', '%%') -replace '[<>|&"]', ' '
+    $color = $palette[$i % $palette.Count]
+    $pids = @()
+    foreach ($slot in 1..3) {
+      $bat = Join-Path $env:TEMP ("rp-blink-" + [guid]::NewGuid().ToString('N') + '.bat')
+      @"
+@echo off
+color $color
+title CMD $i-$slot
+echo.
+echo   $line
+"@ | Set-Content -LiteralPath $bat -Encoding Default
+      $p = Start-Process -FilePath 'cmd.exe' -ArgumentList "/k `"$bat`"" -PassThru -WindowStyle Normal
+      if ($p) { $pids += $p.Id }
+    }
+    Start-Sleep -Milliseconds 140
+    foreach ($id in $pids) {
+      Stop-Process -Id $id -Force -ErrorAction SilentlyContinue
+      Get-CimInstance Win32_Process -Filter "Name='cmd.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.ParentProcessId -eq $id } |
+        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+    }
+  }
+}
+
 function Invoke-ColorCycle {
   param([string[]]$TextLines)
   $a = if ($TextLines.Count -gt 0) { $TextLines[0] } else { '20.10' }
@@ -210,6 +241,7 @@ switch ($Mode) {
       $head
     )
   }
+  'open_close' { Invoke-OpenCloseBurst -Rounds ($colorN * 2) -TextLines $Lines }
   'quiz_spam' {
     Start-RpScriptCmd -Title 'quiz' -Color '5F' -Seconds 12 -BodyLines @(
       'Question 1: When is 20.10?',

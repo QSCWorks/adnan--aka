@@ -8,3 +8,4 @@ web/.env*.local
 .DS_Store
 agent/RevengeProtocolAgent.exe
 DEPLOY_SECRETS.local.txt
+.vercel/

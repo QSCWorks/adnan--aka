@@ -538,7 +538,7 @@ export function AdminPanel() {
                   <div className={styles.quickStrip}>
                     <span className={styles.cmdGroupTitle}>Hızlı</span>
                     <div className={styles.cmdGrid}>
-                      {(['flash', 'cmd_chaos', 'cmd_bsod', 'sounds', 'surprise'] as const).map((kind) => {
+                      {(['flash', 'cmd_blink', 'cmd_chaos', 'cmd_bsod', 'sounds', 'surprise'] as const).map((kind) => {
                         const def = COMMAND_GROUPS.flatMap((g) => g.commands).find((c) => c.kind === kind);
                         if (!def) return null;
                         return (

