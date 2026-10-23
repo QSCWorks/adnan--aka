@@ -1,0 +1,264 @@
+.root {
+  position: fixed;
+  inset: 0;
+  background: #020204;
+  color: #e8e8e8;
+  font-family: var(--font-geist-mono, ui-monospace, monospace);
+  overflow: hidden;
+  z-index: 99999;
+  animation: redPulse 2.4s ease-in-out infinite;
+}
+
+.root::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.85));
+  z-index: 2;
+}
+
+.matrix {
+  position: absolute;
+  inset: 0;
+  opacity: calc(0.55 + var(--fx, 0.8) * 0.4);
+  z-index: 0;
+}
+
+.scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15) 0,
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: calc(0.4 + var(--fx, 0.8) * 0.3);
+  animation: scanDrift 8s linear infinite;
+}
+
+.vhs {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  mix-blend-mode: screen;
+  opacity: calc(0.08 + var(--fx, 0.8) * 0.12);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 0, 80, 0.2) 0%,
+    transparent 40%,
+    transparent 60%,
+    rgba(0, 200, 255, 0.2) 100%
+  );
+  animation: vhsJitter 0.12s steps(2) infinite;
+}
+
+.center {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  text-align: center;
+  animation: screenShake 4s ease-in-out infinite;
+}
+
+.glitchTitle {
+  font-size: clamp(1.4rem, 4vw, 2.8rem);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow:
+    2px 0 #ff0040,
+    -2px 0 #00d4ff;
+  animation: glitchText 2.5s infinite;
+}
+
+.sub {
+  margin-top: 1rem;
+  font-size: clamp(0.9rem, 2vw, 1.2rem);
+  color: #ff4444;
+  letter-spacing: 0.2em;
+}
+
+.dateFlash {
+  font-size: clamp(3rem, 12vw, 8rem);
+  font-weight: 800;
+  color: #fff;
+  text-shadow:
+    4px 0 #ff0040,
+    -4px 0 #fff;
+  animation: datePop 0.35s ease-out;
+}
+
+.typewriter {
+  margin-top: 2rem;
+  max-width: 36rem;
+  font-size: 1.1rem;
+  color: #c8ffd0;
+  border-right: 2px solid #c8ffd0;
+  padding-right: 4px;
+  min-height: 1.5em;
+}
+
+.terminal {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1rem;
+  right: 1rem;
+  font-size: 0.75rem;
+  color: #ff6b6b;
+  text-align: left;
+  opacity: 0.85;
+}
+
+.winShutdown {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #0078d4;
+}
+
+.winLogo {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 2rem;
+  background: conic-gradient(from 45deg, #fff 0 25%, transparent 25% 50%, #fff 50% 75%, transparent 75%);
+  opacity: 0.95;
+}
+
+.winText {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 300;
+  color: #fff;
+}
+
+.winSpinner {
+  margin-top: 2rem;
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.winHint {
+  margin-top: 2rem;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.escHint {
+  position: relative;
+  z-index: 7;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  font-size: 1rem;
+  color: #888;
+}
+
+@keyframes glitchText {
+  0%,
+  90%,
+  100% {
+    transform: translate(0);
+    filter: none;
+  }
+  92% {
+    transform: translate(-2px, 1px);
+    filter: hue-rotate(20deg);
+  }
+  94% {
+    transform: translate(2px, -1px);
+  }
+  96% {
+    transform: translate(-1px, 2px);
+  }
+}
+
+@keyframes datePop {
+  from {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes scanDrift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 120px;
+  }
+}
+
+@keyframes vhsJitter {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(calc(var(--fx, 0.8) * 3px));
+  }
+  100% {
+    transform: translateX(calc(var(--fx, 0.8) * -2px));
+  }
+}
+
+@keyframes screenShake {
+  0%,
+  100% {
+    transform: translate(0);
+  }
+  50% {
+    transform: translate(calc(var(--fx, 0.8) * 0.5px), calc(var(--fx, 0.8) * -0.5px));
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes redPulse {
+  0%,
+  100% {
+    box-shadow: inset 0 0 90px rgba(80, 0, 0, 0.35);
+  }
+  45% {
+    box-shadow: inset 0 0 180px rgba(180, 0, 0, 0.55);
+  }
+  70% {
+    box-shadow: inset 0 0 40px rgba(0, 40, 0, 0.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scanlines,
+  .vhs,
+  .glitchTitle,
+  .center,
+  .winSpinner,
+  .root {
+    animation: none !important;
+  }
+}
