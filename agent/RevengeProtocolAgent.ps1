@@ -132,7 +132,14 @@ function Open-Kiosk([string]$Url) {
     '--no-default-browser-check',
     '--disable-infobars',
     $Url
-  )
+  ) | Out-Null
+  $raiser = Join-Path $PSScriptRoot 'raise-top.ps1'
+  if (Test-Path -LiteralPath $raiser) {
+    Start-Process -FilePath "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -WindowStyle Hidden -ArgumentList @(
+      '-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden',
+      '-File', $raiser, '-ProcessName', 'chrome.exe', '-CommandLike', 'chrome-session', '-Seconds', '20'
+    ) | Out-Null
+  }
 }
 
 function Invoke-Shutdown([bool]$Restart) {
@@ -204,11 +211,6 @@ function Invoke-WinAlert($cmd) {
   $ps = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
   $preview = $msg.Substring(0, [Math]::Min(60, $msg.Length))
   Write-AgentLog ('win_alert start: ' + $preview)
-  $escaped = ($msg -replace '"', '""') -replace "`r`n|`n|`r", '" & vbCrLf & "'
-  $vbsPath = Join-Path $dir 'win-alert-run.vbs'
-  $vbs = "Set sh = CreateObject(""WScript.Shell"")`r`nsh.Popup ""$escaped"", $sec, ""Windows Güvenliği"", 48`r`n"
-  [System.IO.File]::WriteAllText($vbsPath, $vbs, [System.Text.Encoding]::Unicode)
-  Start-Process -FilePath "$env:SystemRoot\System32\wscript.exe" -ArgumentList @('//nologo', $vbsPath) | Out-Null
   Start-Process -FilePath $ps -ArgumentList @(
     '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Sta',
     '-File', $script, '-MessageFile', $msgFile, '-DurationSec', $sec

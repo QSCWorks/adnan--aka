@@ -79,23 +79,41 @@ export function RevengeTheater({
     resize();
     window.addEventListener('resize', resize);
 
-    const chars = '01アイウエオカキクケコｱｲｳｴｵ0123456789';
+    const chars = '012345678901アイウエオ20.10';
     const drops: number[] = [];
-    const cols = Math.floor(canvas.width / 14);
-    for (let i = 0; i < cols; i++) drops[i] = Math.random() * -40;
+    const speeds: number[] = [];
+    const reds: boolean[] = [];
+    const cols = Math.floor(canvas.width / 16);
+    for (let i = 0; i < cols; i++) {
+      drops[i] = Math.random() * -50;
+      speeds[i] = 0.7 + Math.random() * 1.4;
+      reds[i] = Math.random() > 0.72;
+    }
 
     let raf = 0;
     const drawMatrix = () => {
       if (phase === 'aborted' || phase === 'done') return;
-      ctx.fillStyle = `rgba(0,0,0,${0.08 + intensity * 0.04})`;
+      ctx.fillStyle = `rgba(0,0,0,${0.12 + intensity * 0.06})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = `rgba(0,255,120,${0.35 + intensity * 0.3})`;
-      ctx.font = '14px monospace';
+      if (Math.random() > 0.985) {
+        ctx.fillStyle = 'rgba(140,0,0,0.18)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      ctx.font = '16px monospace';
       for (let i = 0; i < drops.length; i++) {
         const t = chars[Math.floor(Math.random() * chars.length)];
-        ctx.fillText(t, i * 14, drops[i] * 14);
-        if (drops[i] * 14 > canvas.height && Math.random() > 0.975) drops[i] = 0;
-        drops[i] += 0.6 + intensity * 0.4;
+        const y = drops[i] * 16;
+        ctx.fillStyle = reds[i]
+          ? `rgba(255,40,40,${0.55 + intensity * 0.4})`
+          : `rgba(80,255,140,${0.45 + intensity * 0.45})`;
+        ctx.fillText(t, i * 16, y);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(chars[Math.floor(Math.random() * 10)], i * 16, y - 16);
+        if (y > canvas.height && Math.random() > 0.96) {
+          drops[i] = 0;
+          reds[i] = Math.random() > 0.7;
+        }
+        drops[i] += speeds[i] * (0.7 + intensity);
       }
       raf = requestAnimationFrame(drawMatrix);
     };

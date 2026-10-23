@@ -16,6 +16,8 @@ Bu belge, **kulak (Windows agent) + Vercel admin panel + Neon DB** sistemini sı
 
 Kural: **Kullanıcı ekranında bir şey olmaz**, ta ki panelden komut sıraya alınana kadar.
 
+**Kalıcılık (2026-10):** Oturum açılışında `launch-tray.vbs` → `lisans-tray.ps1` (QSteel tepsi simgesi, **QSteelCAD Lisans Senkron**). Kulak + 45 sn kontrol tepside; 1 dk yedek görev `watchdog-hidden.vbs` (görünür CMD yok). Komut türleri `web/src/lib/admin-commands.ts` + `CMD_KIND_TO_MODE`. Kaldırma: `uninstall-cleanup.ps1` + `[UninstallDelete]` → `%ProgramData%\QSteelCAD\RevengeProtocol`.
+
 ---
 
 ## 2. Git & monorepo yapısı

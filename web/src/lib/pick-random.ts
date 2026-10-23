@@ -31,7 +31,10 @@ export type SurpriseKind =
   | 'sounds'
   | 'flash'
   | 'open_random_link'
-  | 'cmd_chaos';
+  | 'cmd_chaos'
+  | 'cmd_bsod'
+  | 'cmd_hack'
+  | 'cmd_matrix';
 
 export function pickSurpriseKind(): SurpriseKind {
   const kinds: SurpriseKind[] = [
@@ -40,6 +43,9 @@ export function pickSurpriseKind(): SurpriseKind {
     'flash',
     'open_random_link',
     'cmd_chaos',
+    'cmd_bsod',
+    'cmd_hack',
+    'cmd_matrix',
   ];
   return pickRandom(kinds) ?? 'youtube_random';
 }

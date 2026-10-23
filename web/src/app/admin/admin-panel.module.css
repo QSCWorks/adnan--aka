@@ -411,7 +411,7 @@
 .mainContent {
   flex: 1;
   padding: 1rem 1.25rem 2.5rem;
-  max-width: 56rem;
+  max-width: 62rem;
 }
 
 .statGrid {
@@ -564,4 +564,49 @@
   font-size: 0.8125rem;
   color: #9aa3b2;
   line-height: 1.55;
+}
+
+.healthBanner {
+  margin-bottom: 0.75rem;
+}
+
+.commandToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+  align-items: center;
+}
+
+.commandToolbar .input {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.quickStrip {
+  margin-bottom: 1rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.55rem;
+  border: 1px dashed #2a3140;
+  background: rgba(255, 0, 64, 0.04);
+}
+
+.btnChip {
+  background: #12151c;
+  border-color: #3d4659;
+  color: #e8eaed;
+  font-size: 0.68rem;
+  padding: 0.35rem 0.55rem;
+}
+
+.statCard:nth-child(1) .statValue {
+  color: #3dd68c;
+}
+
+.cmdGrid {
+  gap: 0.42rem;
+}
+
+.cmdGrid .btn {
+  min-height: 2rem;
 }

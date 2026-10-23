@@ -1,3 +1,4 @@
+import { CMD_KIND_TO_MODE, type CommandKind } from '@/lib/admin-commands';
 import type { RevengeSettings } from '@/lib/settings-defaults';
 import {
   pickFlashMessage,
@@ -81,18 +82,11 @@ export function buildAgentCommand(
     };
   }
 
-  if (kind === 'cmd_flash' || kind === 'cmd_flash_plain' || kind === 'cmd_loop' || kind === 'cmd_chaos') {
-    const mode =
-      kind === 'cmd_flash'
-        ? 'flash_color'
-        : kind === 'cmd_flash_plain'
-          ? 'flash_plain'
-          : kind === 'cmd_loop'
-            ? 'loop'
-            : 'chaos';
+  const cmdMode = CMD_KIND_TO_MODE[kind as CommandKind];
+  if (cmdMode) {
     return {
       kind: 'cmd_prank',
-      mode,
+      mode: cmdMode,
       flashCount: settings.cmdFlashCount,
       flashMs: settings.cmdFlashVisibleMs,
       flashPlainMs: settings.cmdFlashPlainMs,
