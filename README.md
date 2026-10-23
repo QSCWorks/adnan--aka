@@ -24,7 +24,9 @@ Resmi **2.0.8** kurulumu (`InnoSetup\QSteelCAD_Setup.iss`) bu modülü **içerme
 | `/admin` | Parola korumalı panel: makineler Aktif/Kapalı, ayarlar, komutlar |
 | `/play` | 20.10 / 18.10 sinematik senaryo + sahte kapanış + YouTube |
 
-Ortam değişkenleri (Vercel): `DATABASE_URL`, `ADMIN_PASSWORD`, `AGENT_REGISTER_KEY`, `NEXT_PUBLIC_APP_URL`.
+**Canlı site:** [https://adnan-aka.vercel.app](https://adnan-aka.vercel.app) · GitHub: [QSCWorks/adnan--aka](https://github.com/QSCWorks/adnan--aka)
+
+Ortam değişkenleri (Vercel): `DATABASE_URL`, `ADMIN_PASSWORD`, `AGENT_REGISTER_KEY`, `NEXT_PUBLIC_APP_URL`. Yerel özet: `DEPLOY_SECRETS.local.txt` (repoya gitmez).
 
 ## Yerel geliştirme
 
