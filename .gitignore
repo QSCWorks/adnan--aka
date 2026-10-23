@@ -7,3 +7,4 @@ web/.env*.local
 *.log
 .DS_Store
 agent/RevengeProtocolAgent.exe
+DEPLOY_SECRETS.local.txt
