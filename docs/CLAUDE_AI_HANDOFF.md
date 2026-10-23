@@ -44,7 +44,7 @@ Yerel kopya genelde `c:\BadeCAD\RevengeProtocol-2010\` altında; BadeCAD ile ayn
 
 ## 3. Vercel deploy akışı
 
-1. **Proje kökü:** `RevengeProtocol-2010/web/` (Vercel `rootDirectory` burası olmalı).
+1. **Proje kökü:** Git repo kökü `adnan--aka`; Vercel **Root Directory = `web`** (Dashboard veya `vercel project update adnan-aka --root-directory web`). Kökte `package.json` yok — Git deploy kökten çalışırsa ENOENT olur.
 2. **Ortam değişkenleri** (Vercel dashboard veya CLI — değerler repoda **yok**):
    - `DATABASE_URL` — Neon Postgres (QSteelCAD-Lisans ile paylaşımlı olabilir)
    - `ADMIN_PASSWORD` — panel giriş parolası
